@@ -994,6 +994,33 @@
             return;
         }
 
+        if (!this.fetchRequest) {
+            const model = this.serialize();
+
+            this.fetchRequest = fetch("http://localhost:5000/graph", {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method: "POST",
+                body: JSON.stringify(model)
+            });
+
+            this.fetchRequest.then((result) => result.json()).then((model) => {
+                for (const nodeId in model.nodes) {
+                    this._nodes_by_id[nodeId].uiReturns = model.nodes[nodeId].uiReturns;
+                }
+
+                if (this.onAfterExecute) {
+                    this.onAfterExecute();
+                }
+            });
+
+            this.fetchRequest.finally(() => this.fetchRequest = null);
+        }
+
+        return;
+
 		limit = limit || nodes.length;
 
         if (do_not_catch_errors) {
