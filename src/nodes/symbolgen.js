@@ -49,7 +49,7 @@ function drawToCanvas(images, ctx, size) {
     var LiteGraph = global.LiteGraph;
 
     function BinaryNoise() {
-        this.addOutput("images", "ListOfFloatArray2D");
+        this.addOutput("images", "ImageList");
         this.properties = {
             seed: 0,
             width: 5,
@@ -76,16 +76,16 @@ function drawToCanvas(images, ctx, size) {
         if (this.flags.collapsed) {
             return;
         }
-        if (this.uiReturns && this.uiReturns.images && this.size[0] > 5 && this.size[1] > 5) {
-            drawToCanvas(this.uiReturns.images, ctx, this.size);
+        if (this.processingResults && this.processingResults.images && this.size[0] > 5 && this.size[1] > 5) {
+            drawToCanvas(this.processingResults.images, ctx, this.size);
         }
     };
 
     LiteGraph.registerNodeType("symbolgen/binary_noise", BinaryNoise);
 
     function Convolution() {
-        this.addInput("images", "ListOfFloatArray2D");
-        this.addOutput("images", "ListOfFloatArray2D");
+        this.addInput("images", "ImageList");
+        this.addOutput("images", "ImageList");
 
         this.properties = {
             omega: 1.5,
@@ -104,16 +104,16 @@ function drawToCanvas(images, ctx, size) {
         if (this.flags.collapsed) {
             return;
         }
-        if (this.uiReturns && this.uiReturns.images && this.size[0] > 5 && this.size[1] > 5) {
-            drawToCanvas(this.uiReturns.images, ctx, this.size);
+        if (this.processingResults && this.processingResults.images && this.size[0] > 5 && this.size[1] > 5) {
+            drawToCanvas(this.processingResults.images, ctx, this.size);
         }
     };
 
     LiteGraph.registerNodeType("symbolgen/convolution", Convolution);
 
     function Scale() {
-        this.addInput("images", "ListOfFloatArray2D");
-        this.addOutput("images", "ListOfFloatArray2D");
+        this.addInput("images", "ImageList");
+        this.addOutput("images", "ImageList");
 
         this.properties = {
             cellSize: 16,
@@ -133,16 +133,16 @@ function drawToCanvas(images, ctx, size) {
         if (this.flags.collapsed) {
             return;
         }
-        if (this.uiReturns && this.uiReturns.images && this.size[0] > 5 && this.size[1] > 5) {
-            drawToCanvas(this.uiReturns.images, ctx, this.size);
+        if (this.processingResults && this.processingResults.images && this.size[0] > 5 && this.size[1] > 5) {
+            drawToCanvas(this.processingResults.images, ctx, this.size);
         }
     };
 
     LiteGraph.registerNodeType("symbolgen/scale", Scale);
 
     function Threshold() {
-        this.addInput("images", "ListOfFloatArray2D");
-        this.addOutput("images", "ListOfFloatArray2D");
+        this.addInput("images", "ImageList");
+        this.addOutput("images", "ImageList");
 
         this.properties = {
             percentile: 50,
@@ -161,8 +161,8 @@ function drawToCanvas(images, ctx, size) {
         if (this.flags.collapsed) {
             return;
         }
-        if (this.uiReturns && this.uiReturns.images && this.size[0] > 5 && this.size[1] > 5) {
-            drawToCanvas(this.uiReturns.images, ctx, this.size);
+        if (this.processingResults && this.processingResults.images && this.size[0] > 5 && this.size[1] > 5) {
+            drawToCanvas(this.processingResults.images, ctx, this.size);
         }
     };
 
