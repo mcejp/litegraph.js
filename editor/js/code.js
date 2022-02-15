@@ -80,6 +80,7 @@ function addDemo( name, url )
 }
 
 //some examples
+addDemo("Hexland", "examples/hexland.json");
 addDemo("Symbolgen", "examples/symbolgen.json");
 addDemo("Features", "examples/features.json");
 addDemo("Benchmark", "examples/benchmark.json");

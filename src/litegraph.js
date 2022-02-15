@@ -1008,7 +1008,12 @@
 
             this.fetchRequest.then((result) => result.json()).then((model) => {
                 for (const nodeId in model.nodes) {
-                    this._nodes_by_id[nodeId].processingResults = model.nodes[nodeId].uiReturns;
+                    const node = this._nodes_by_id[nodeId];
+                    node.processingResults = model.nodes[nodeId].uiReturns;
+
+                    if (node.onProcessingResults) {
+                        node.onProcessingResults(node.processingResults);
+                    }
                 }
 
                 if (this.onAfterExecute) {
