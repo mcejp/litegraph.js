@@ -997,6 +997,11 @@
         if (!this.fetchRequest) {
             const model = this.serialize();
 
+            // HACK: can't rely on this being available!
+            const btn = document.getElementById("playstepnode_button");
+            btn.innerHTML = '<img src="imgs/icon-playstep.png"> Fetching...';
+            const startTime = new Date();
+
             this.fetchRequest = fetch("http://localhost:5000/graph", {
                 headers: {
                     'Accept': 'application/json',
@@ -1009,7 +1014,7 @@
             this.fetchRequest.then((result) => result.json()).then((model) => {
                 for (const nodeId in model.nodes) {
                     const node = this._nodes_by_id[nodeId];
-                    node.processingResults = model.nodes[nodeId].uiReturns;
+                    node.processingResults = model.nodes[nodeId].extraOutputs;
 
                     if (node.onProcessingResults) {
                         node.onProcessingResults(node.processingResults);
@@ -1019,6 +1024,10 @@
                 if (this.onAfterExecute) {
                     this.onAfterExecute();
                 }
+
+                btn.innerHTML = `<img src="imgs/icon-playstep.png"> Step (took ${((new Date() - startTime) / 1000).toFixed(1)} sec)`;
+            }, (error) => {
+                btn.innerHTML = `<img src="imgs/icon-playstep.png"> Step (FAILED after ${((new Date() - startTime) / 1000).toFixed(1)} sec)`;
             });
 
             this.fetchRequest.finally(() => this.fetchRequest = null);
