@@ -9787,8 +9787,49 @@ LGraphNode.prototype.executeAction = function(action)
                     if (show_text) {
                         ctx.textAlign = "center";
                         ctx.fillStyle = text_color;
+
+                        let decimalDigits;
+                        if (w.options.hasOwnProperty("resolution")) {
+                            // display value with decimal digits corresponding to the specified resolution
+                            // examples:
+                            //  10 -> 0 decimal digits          (log10 resolution > 0)
+                            //  1 -> 0 decimal digits           (log10 resolution = 0)
+                            //  1.1 -> 1 decimal digits         (log10 resolution =  0.n, resolution NOT an integer multiple of 10^0, show to 2 significant digits)
+                            //  0.200 -> 1 decimal digit        (log10 resolution = -0.n, resolution is an integer multiple of 10^-1)
+                            //  0.100 -> 1 decimal digit        (log10 resolution = -1  , resolution is an integer multiple of 10^-1)
+                            //  0.05  -> 2 decimal digits       (log10 resolution = -1.x, resolution is an integer multiple of 10^-2)
+                            //  0.150 -> 2 decimal digits       (log10 resolution = -0.n, resolution NOT an integer multiple of 10^-1, show to 2 significant digits)
+                            //  0.015 -> 3 decimal digits       (log10 resolution = -1.n, resolution NOT an integer multiple of 10^-2, show to 2 significant digits)
+                            if (Number.isInteger(w.options.resolution)) {
+                                decimalDigits = 0;
+                            }
+                            else {
+                                const candidatePower = Math.floor(Math.log10(w.options.resolution));
+                                const candidateDigit = Math.pow(10, candidatePower);
+                                const digitError = w.options.resolution % candidateDigit;
+
+                                // apply a relative tolerance of 1 %
+                                // note that e.g. 0.7 % 0.1 might give a result of 0.0999... due to floating-point inaccuracies
+                                if (digitError < candidateDigit * 0.01 || digitError > candidateDigit * 0.99) {
+                                    decimalDigits = -candidatePower;
+                                }
+                                else {
+                                    decimalDigits = -candidatePower + 1;
+                                }
+
+                                // if the step is e.g. 111.1 we might arrive at a negative number of decimal digits
+                                // in this case, keep at least one decimal to hint that some rounding is taking place
+                                if (decimalDigits < 0) {
+                                    decimalDigits = 1;
+                                }
+                            }
+                        }
+                        else {
+                            decimalDigits = 3;
+                        }
+
                         ctx.fillText(
-                            w.name + "  " + Number(w.value).toFixed(3),
+                            w.name + "  " + Number(w.value).toFixed(decimalDigits),
                             widget_width * 0.5,
                             y + H * 0.7
                         );
