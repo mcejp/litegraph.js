@@ -6088,7 +6088,8 @@ LGraphNode.prototype.executeAction = function(action)
 						}
                     }
 
-                    if (!block_drag_node) {
+					// begin node drag, unless pinned
+                    if (!block_drag_node && !node.flags.pinned) {
                         if (this.allow_dragnodes) {
 							this.graph.beforeChange();
                             this.node_dragged = node;
@@ -6513,6 +6514,7 @@ LGraphNode.prototype.executeAction = function(action)
                 this.dirty_bgcanvas = true;
             }
 
+            // node being resized
             if (this.resizing_node && !this.live_mode) {
                 //convert mouse to node space
 				var desired_size = [ e.canvasX - this.resizing_node.pos[0], e.canvasY - this.resizing_node.pos[1] ];
@@ -9987,20 +9989,61 @@ LGraphNode.prototype.executeAction = function(action)
                     }
 					break;
 				case "slider":
+                    var old_value = w.value;
 					var nvalue = Math.clamp((x - 15) / (widget_width - 30), 0, 1);
-					w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
-					if (w.callback) {
-						setTimeout(function() {
-							inner_value_change(w, w.value);
-						}, 20);
-					}
+
+                    if (w.options.hasOwnProperty("resolution")) {
+                        // resolution has been specified, so `value - min` must be an integer multiple thereof
+                        // note that if `min` and `resolution` are both integer, this guarantees `value` to always be an integer as well
+
+                        if (w.options.resolution <= 0) {
+                            throw "Invalid value for option `resolution`";
+                        }
+
+                        w.value = w.options.min + Math.round((w.options.max - w.options.min) * nvalue / w.options.resolution) * w.options.resolution;
+                    }
+                    else {
+					    w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
+                    }
+
+                    if( old_value != w.value )
+						setTimeout(
+							function() {
+								inner_value_change(this, this.value);
+							}.bind(w),
+							20
+						);
+
+					// if (w.callback) {
+					// 	setTimeout(function() {
+					// 		inner_value_change(w, w.value);
+					// 	}, 20);
+					// }
 					this.dirty_canvas = true;
 					break;
 				case "number":
 				case "combo":
 					var old_value = w.value;
 					if (event.type == LiteGraph.pointerevents_method+"move" && w.type == "number") {
-						w.value += event.deltaX * 0.1 * (w.options.step || 1);
+						if (w.options.integerStep) {
+							// this is a bit more complex than slider, since we want to remember all user input,
+							// even if it does not constitute a full step in any single event
+
+							let accumulatedError = (w.accumulatedError || 0) + event.deltaX * 0.1;
+
+							// could use Math.trunc: https://caniuse.com/mdn-javascript_builtins_math_trunc
+							const integerSteps = accumulatedError < 0 ? Math.ceil(accumulatedError) : Math.floor(accumulatedError);
+
+							w.value += integerSteps * (w.options.step || 1);
+							accumulatedError -= integerSteps;
+
+							w.accumulatedError = accumulatedError;
+
+							// note that clamping to min/max is only done later, therefore we never wind up with abs(accumulatedError) >= 1.0
+						}
+						else {
+							w.value += event.deltaX * 0.1 * (w.options.step || 1);
+						}
 						if ( w.options.min != null && w.value < w.options.min ) {
 							w.value = w.options.min;
 						}
@@ -10017,9 +10060,21 @@ LGraphNode.prototype.executeAction = function(action)
 						if( w.type != "number")
 							values_list = values.constructor === Array ? values : Object.keys(values);
 
+						// Delta is
+						//  -1 if the left arrow has been clicked
+						//   1 if the right arrow has been clicked
+						//   0 otherwise
+						// (applies both to 'number' and 'combo' widgets)
 						var delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
+
 						if (w.type == "number") {
-							w.value += delta * 0.1 * (w.options.step || 1);
+							if (w.options.integerStep) {
+								w.value += delta * (w.options.step || 1);
+							}
+							else {
+								w.value += delta * 0.1 * (w.options.step || 1);
+							}
+
 							if ( w.options.min != null && w.value < w.options.min ) {
 								w.value = w.options.min;
 							}
