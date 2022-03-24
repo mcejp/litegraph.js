@@ -11,9 +11,11 @@ window.onbeforeunload = function(){
 	var data = JSON.stringify( graph.serialize() );
 	localStorage.setItem("litegraphg demo backup", data );
 }
+const presetManager = new PresetManager(editor.graph);
 
 //enable scripting
 LiteGraph.allow_scripts = true;
+editor.graph.config.align_to_grid = true;
 
 //test
 //editor.graphcanvas.viewport = [200,200,400,400];
@@ -23,15 +25,40 @@ var elem = document.createElement("span");
 elem.id = "LGEditorTopBarSelector";
 elem.className = "selector";
 elem.innerHTML = "";
-elem.innerHTML += "Demo <select><option>Empty</option></select> <button class='btn' id='save'>Save</button><button class='btn' id='load'>Load</button><button class='btn' id='download'>Download</button> | <button class='btn' id='webgl'>WebGL</button> <button class='btn' id='multiview'>Multiview</button>";
+elem.innerHTML += "Demo <select id='demos'><option>Empty</option></select> <button class='btn' id='save'>Save</button><button class='btn' id='load'>Load</button><button class='btn' id='download'>Download</button> | <button class='btn' id='webgl'>WebGL</button> <button class='btn' id='multiview'>Multiview</button> | <select id='preset'><option>Default</option><option>Save as...</option></select>";
 editor.tools.appendChild(elem);
-var select = elem.querySelector("select");
+var select = elem.querySelector("#demos");
+const presetSelect = elem.querySelector("#preset");
 select.addEventListener("change", function(e){
 	var option = this.options[this.selectedIndex];
 	var url = option.dataset["url"];
 	
-	if(url)
+	if(url) {
+		graph.onConfigure = (data) => {
+			presetManager.loadPresetsFrom(data)
+
+			// remove what there is
+			presetSelect.replaceChildren();
+
+			for (const name of Object.keys(presetManager.allPresetData)) {
+				const option = document.createElement("option");
+				option.innerHTML = name;
+				presetSelect.appendChild( option );
+
+				if (name === presetManager.currentPresetName) {
+					presetSelect.selectedIndex = presetSelect.childElementCount - 1;
+				}
+			}
+
+			// re-add "Save as"
+			var option = document.createElement("option");
+			option.innerHTML = "Save as...";
+			presetSelect.appendChild( option );
+
+			editor.graph.config.align_to_grid = true;
+		};
 		graph.load( url );
+	}
 	else if(option.callback)
 		option.callback();
 	else
@@ -51,7 +78,9 @@ elem.querySelector("#load").addEventListener("click",function(){
 });
 
 elem.querySelector("#download").addEventListener("click",function(){
-	var data = JSON.stringify( graph.serialize() );
+	const ser = graph.serialize();
+	presetManager.serializeTo(ser);
+	var data = JSON.stringify( ser );
 	var file = new Blob( [ data ] );
 	var url = URL.createObjectURL( file );
 	var element = document.createElement("a");
@@ -67,6 +96,36 @@ elem.querySelector("#download").addEventListener("click",function(){
 elem.querySelector("#webgl").addEventListener("click", enableWebGL );
 elem.querySelector("#multiview").addEventListener("click", function(){ editor.addMultiview()  } );
 
+presetSelect.addEventListener("change", function(e){
+	var option = this.options[this.selectedIndex];
+	// var url = option.dataset["url"];
+	
+	// console.log(option.innerText);
+	if (option.innerText === "Save as...") {
+		const saveAs = window.prompt("New preset name:");
+
+		// console.log(saveAs)
+		presetManager.savePresetAs(saveAs)
+
+		var option = document.createElement("option");
+		option.innerHTML = saveAs;
+		presetSelect.appendChild( option );
+
+		presetSelect.selectedIndex = presetSelect.childElementCount - 1;
+	}
+	else {
+		presetManager.selectPreset(option.innerText);
+	}
+
+	editor.graph.setDirtyCanvas(true);
+
+	// if(url)
+	// 	graph.load( url );
+	// else if(option.callback)
+	// 	option.callback();
+	// else
+	// 	graph.clear();
+});
 
 function addDemo( name, url )
 {
